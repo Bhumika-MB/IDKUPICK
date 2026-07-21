@@ -210,12 +210,23 @@ async function fetchFromOpenStreetMap(location, radius, cuisines, maxPrice) {
 
     const overpassUrl = 'https://overpass-api.de/api/interpreter';
 
-    const response = await axios.post(overpassUrl, query, {
+    const response = await axios.post(
+    overpassUrl,
+    query,
+    {
       headers: {
-        'Content-Type': 'text/plain'
+        "Content-Type": "application/x-www-form-urlencoded"
       },
-      timeout: 15000 // 15 second timeout
-    });
+      timeout: 20000
+    }
+    );
+
+    console.log("\n========== OVERPASS API ==========");
+    console.log("Location:", location);
+    console.log("Radius (km):", radius);
+    console.log("Cuisines:", cuisines);
+    console.log("Response Elements:", response.data.elements?.length || 0);
+    console.log("==================================\n");
 
     if (response.data && response.data.elements) {
       const restaurants = response.data.elements
@@ -293,6 +304,8 @@ async function fetchFromOpenStreetMap(location, radius, cuisines, maxPrice) {
         return scoreB - scoreA;
       });
 
+      console.log("Sample restaurants:");
+      console.log(filtered.slice(0, 5));
       console.log(`Found ${filtered.length} restaurants from OpenStreetMap`);
       return filtered.length > 0 ? filtered : null;
     }

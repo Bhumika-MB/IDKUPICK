@@ -4,6 +4,7 @@ let retryTimer;
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/idkupick';
 
+
   if (!process.env.MONGODB_URI) {
     console.warn('MONGODB_URI not set. Using local default URI.');
   }
