@@ -46,6 +46,8 @@ const getFallbackUserById = (id) => {
   );
 };
 
+const getFallbackUsers = () => Array.from(fallbackUsersByEmail.values());
+
 const generateFallbackGroupCode = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -96,8 +98,6 @@ const presentFallbackGroup = (group) => {
   };
 };
 
-const getFallbackUsers = () => Array.from(fallbackUsersByEmail.values());
-
 const getFallbackGroupPreferences = (groupId) => {
   return fallbackPreferencesByGroupId.get(String(groupId)) || [];
 };
@@ -125,6 +125,35 @@ const saveFallbackPreference = (preference) => {
   return preference;
 };
 
+const deleteFallbackGroup = (id) => {
+  const key = String(id);
+  const group = fallbackGroupsById.get(key);
+  if (group) {
+    fallbackGroupsById.delete(key);
+    const codeKey = String(group.code).toUpperCase();
+    fallbackGroupsByCode.delete(codeKey);
+  }
+  fallbackPreferencesByGroupId.delete(key);
+};
+
+const updateFallbackGroupRecommendations = (groupId, recommendations) => {
+  const key = String(groupId);
+  const group = fallbackGroupsById.get(key);
+  if (group) {
+    group.recommendation = {
+      restaurants: recommendations,
+      generatedAt: new Date()
+    };
+    // Also update the code-based lookup
+    const codeKey = String(group.code).toUpperCase();
+    if (fallbackGroupsByCode.has(codeKey)) {
+      fallbackGroupsByCode.get(codeKey).recommendation = group.recommendation;
+    }
+    return true;
+  }
+  return false;
+};
+
 module.exports = {
   normalizeEmail,
   isMongoReady,
@@ -140,5 +169,7 @@ module.exports = {
   presentFallbackGroup,
   getFallbackGroupPreferences,
   getFallbackUserPreference,
-  saveFallbackPreference
+  saveFallbackPreference,
+  deleteFallbackGroup,
+  updateFallbackGroupRecommendations
 };

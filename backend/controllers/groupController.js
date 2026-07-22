@@ -1,4 +1,5 @@
 const Group = require('../models/Group');
+const Preference = require('../models/Preference');
 const {
   isMongoReady,
   generateFallbackGroupCode,
@@ -6,7 +7,8 @@ const {
   getFallbackGroupById,
   getFallbackGroupByCode,
   getFallbackUserGroups,
-  presentFallbackGroup
+  presentFallbackGroup,
+  deleteFallbackGroup
 } = require('../utils/fallbackStore');
 
 // @desc    Create a new group
@@ -261,7 +263,6 @@ exports.updateGroupStatus = async (req, res) => {
       });
     }
 
-    // Check if user is the creator
     if (group.creator.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
@@ -280,6 +281,70 @@ exports.updateGroupStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating group status',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Delete a group
+// @route   DELETE /api/groups/:id
+// @access  Private
+exports.deleteGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (isMongoReady()) {
+      const group = await Group.findById(id);
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          message: 'Group not found'
+        });
+      }
+
+      if (group.creator.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the group creator can delete the group'
+        });
+      }
+
+      await Preference.deleteMany({ group: id });
+      await Group.findByIdAndDelete(id);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Group and associated preferences deleted successfully'
+      });
+    }
+
+    // Fallback mode
+    const group = getFallbackGroupById(id);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        message: 'Group not found'
+      });
+    }
+
+    const userId = req.user.id || req.user._id;
+    if (String(group.creator) !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the group creator can delete the group'
+      });
+    }
+
+    deleteFallbackGroup(id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Group and associated preferences deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting group',
       error: error.message
     });
   }

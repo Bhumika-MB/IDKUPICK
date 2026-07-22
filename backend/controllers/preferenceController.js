@@ -50,7 +50,6 @@ exports.submitPreferences = async (req, res) => {
       });
     }
 
-    // Check if preferences already exist for this user in this group
     if (!isMongoReady()) {
       const preference = saveFallbackPreference({
         _id: getFallbackUserPreference(groupId, req.user.id)?._id || crypto.randomUUID(),
@@ -64,6 +63,8 @@ exports.submitPreferences = async (req, res) => {
       });
       const member = group.members.find((item) => getMemberId(item) === String(req.user.id));
       if (member) member.hasSubmittedPreferences = true;
+      // Clear stale recommendations when preferences are updated (fallback mode)
+      group.recommendation = { restaurants: [], generatedAt: null };
       return res.status(200).json({ success: true, data: { preference } });
     }
 
@@ -101,8 +102,15 @@ exports.submitPreferences = async (req, res) => {
 
     if (memberIndex !== -1) {
       group.members[memberIndex].hasSubmittedPreferences = true;
-      await group.save();
     }
+
+    // Clear stale recommendations when preferences are updated
+    group.recommendation = {
+      restaurants: [],
+      generatedAt: null
+    };
+
+    await group.save();
 
     res.status(200).json({
       success: true,
@@ -124,7 +132,6 @@ exports.getGroupPreferences = async (req, res) => {
   try {
     const { groupId } = req.params;
 
-    // Check if group exists and user is a member
     const group = await getGroup(groupId);
     if (!group) {
       return res.status(404).json({
@@ -144,7 +151,6 @@ exports.getGroupPreferences = async (req, res) => {
       });
     }
 
-    // Get all preferences for this group
     const preferences = isMongoReady()
       ? await Preference.find({ group: groupId }).populate('user', 'name email')
       : getFallbackGroupPreferences(groupId);

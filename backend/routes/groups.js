@@ -5,13 +5,15 @@ const {
   joinGroup,
   getGroup,
   getUserGroups,
-  updateGroupStatus
+  updateGroupStatus,
+  deleteGroup
 } = require('../controllers/groupController');
 const { protect } = require('../middleware/auth');
 
 router.post('/', protect, createGroup);
 router.post('/join', protect, joinGroup);
 router.get('/', protect, getUserGroups);
+router.delete('/:id', protect, deleteGroup);
 router.get('/:identifier', protect, getGroup);
 router.put('/:id/status', protect, updateGroupStatus);
 

@@ -4,7 +4,8 @@ const { getRestaurants } = require('../services/restaurantService');
 const {
   isMongoReady,
   getFallbackGroupById,
-  getFallbackGroupPreferences
+  getFallbackGroupPreferences,
+  updateFallbackGroupRecommendations
 } = require('../utils/fallbackStore');
 
 const getMemberId = (member) => String(member.user && member.user._id ? member.user._id : member.user);
@@ -169,7 +170,12 @@ exports.generateRecommendations = async (req, res) => {
       restaurants: topRecommendations,
       generatedAt: new Date()
     };
-    if (isMongoReady()) await group.save();
+    if (isMongoReady()) {
+      await group.save();
+    } else {
+      // Persist to fallback store so GET endpoint retrieves fresh recommendations
+      updateFallbackGroupRecommendations(groupId, topRecommendations);
+    }
 
     res.status(200).json({
       success: true,

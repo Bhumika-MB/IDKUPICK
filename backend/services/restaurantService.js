@@ -153,8 +153,9 @@ function buildAddress(tags) {
   return tags.address || tags['contact:address'] || tags['addr:full'] || 'Address not available';
 }
 
-function buildOpenStreetMapUrl(lat, lng) {
-  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}`;
+function buildGoogleMapsUrl(lat, lng) {
+  // Use the most accurate coordinates for Google Maps directions
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 }
 
 function getCoordinates(element) {
@@ -209,7 +210,7 @@ function isValidName(name) {
 function isPermanentlyClosed(tags) {
   const lifecycleTags = [
     'disused', 'abandoned', 'demolished', 'razed',
-    'ruins', 'closed', 'was:amenity', 'was:building',
+    'ruins', 'was:amenity', 'was:building',
     'removed', 'destroyed'
   ];
   for (const tag of lifecycleTags) {
@@ -218,9 +219,10 @@ function isPermanentlyClosed(tags) {
     // Also check lifecycle namespace: e.g. "disused:amenity" = "restaurant"
     if (tags[tag + ':amenity']) return true;
   }
-  // Check if opening_hours explicitly says "closed"
-  const hours = String(tags.opening_hours || '').toLowerCase();
-  if (hours.includes('closed') && !hours.includes('24/7')) return true;
+  // Only check the explicit "closed" tag, NOT opening_hours text
+  // opening_hours can say "Mo-Fr 09:00-17:00; Sa-Su closed" — that does NOT mean permanently closed
+  const closedTag = String(tags.closed || '').toLowerCase();
+  if (closedTag === 'yes' || closedTag === 'true' || closedTag === '1') return true;
   return false;
 }
 
@@ -278,7 +280,7 @@ function toRestaurant(element, centerLocation, selectedCuisines) {
     location: { lat: coords.lat, lng: coords.lng },
     distance,
     photoUrl: '',
-    googleMapsUrl: buildOpenStreetMapUrl(coords.lat, coords.lng),
+    googleMapsUrl: buildGoogleMapsUrl(coords.lat, coords.lng),
     cuisineMatchCount: getCuisineMatchCount({ name, address: addr, cuisine }, selectedCuisines),
     // Track metadata quality
     tagsComplete: !!(element.tags.opening_hours || element.tags.website ||
