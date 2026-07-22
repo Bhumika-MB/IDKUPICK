@@ -134,6 +134,8 @@ exports.generateRecommendations = async (req, res) => {
       aggregated.cuisines,
       aggregated.maxPrice
     );
+    console.log("Restaurants returned:", restaurants.length);
+    console.log(restaurants.slice(0,3));
 
     if (!restaurants || restaurants.length === 0) {
       return res.status(404).json({

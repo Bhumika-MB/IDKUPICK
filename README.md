@@ -1,11 +1,11 @@
 # IDKUPick
 
-IDKUPick helps a group agree on where to eat. Each member submits cuisine, budget, distance, and location preferences; the app combines them and recommends nearby restaurants using OpenStreetMap's Overpass API.
+IDKUPick helps a group agree on where to eat. Each member submits cuisine, budget, distance, and location preferences; the app combines them and recommends nearby restaurants using the Google Places API.
 
 ## Run it in VS Code
 
 1. Open this `IDKUPICK` folder in VS Code. Install Node.js 18 or newer if `node --version` does not work.
-2. In `backend`, copy `.env.example` to `.env`. Set a long `JWT_SECRET`; add the Atlas connection string when ready.
+2. In `backend`, copy `.env.example` to `.env`. Set a long `JWT_SECRET`; add the Atlas connection string and `GOOGLE_MAPS_API_KEY` when ready.
 3. Open two VS Code terminals:
 
    ```powershell
@@ -36,4 +36,4 @@ Without Atlas the app deliberately uses temporary in-memory data, which is usefu
 
 - `frontend/`: React client
 - `backend/`: Express API, JWT authentication, MongoDB models
-- `backend/services/restaurantService.js`: Overpass query plus local location-aware fallback if the public API is unavailable
+- `backend/services/restaurantService.js`: Google Places-backed restaurant lookup with distance, cuisine, and budget filtering
