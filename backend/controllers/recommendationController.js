@@ -49,6 +49,16 @@ function aggregatePreferences(preferences) {
   };
 }
 
+// Deduplicate restaurants by placeId (Overpass can return same POI as node + way)
+function deduplicateRestaurants(restaurants) {
+  const seen = new Set();
+  return restaurants.filter(r => {
+    if (seen.has(r.placeId)) return false;
+    seen.add(r.placeId);
+    return true;
+  });
+}
+
 // Score restaurants based on group mood
 function scoreRestaurantsByMood(restaurants, mood) {
   const moodPreferences = {
@@ -65,10 +75,13 @@ function scoreRestaurantsByMood(restaurants, mood) {
   return restaurants.map(restaurant => {
     const normalizedPrice = restaurant.priceLevel / 4;
     const normalizedRating = (restaurant.rating || 3) / 5;
+    // Small proximity bonus: closer restaurants score slightly higher
+    const proximityBonus = restaurant.distance ? Math.max(0, 1 - restaurant.distance / 50) * 0.1 : 0;
 
     const score =
       (normalizedRating * weights.ratingWeight) +
-      (normalizedPrice * weights.priceWeight);
+      (normalizedPrice * weights.priceWeight) +
+      proximityBonus;
 
     return {
       ...restaurant,
@@ -134,8 +147,6 @@ exports.generateRecommendations = async (req, res) => {
       aggregated.cuisines,
       aggregated.maxPrice
     );
-    console.log("Restaurants returned:", restaurants.length);
-    console.log(restaurants.slice(0,3));
 
     if (!restaurants || restaurants.length === 0) {
       return res.status(404).json({
@@ -143,6 +154,9 @@ exports.generateRecommendations = async (req, res) => {
         message: 'No restaurants found matching your preferences'
       });
     }
+
+    // Deduplicate (Overpass can return same POI as both node and way)
+    restaurants = deduplicateRestaurants(restaurants);
 
     // Score restaurants based on mood
     restaurants = scoreRestaurantsByMood(restaurants, group.mood);
