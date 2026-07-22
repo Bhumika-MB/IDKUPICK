@@ -33,9 +33,8 @@ function CreateGroup() {
     setLoading(true);
 
     try {
-      const response = await api.post('/groups', formData);
-      const group = response.data.data.group;
-      navigate(`/dashboard`);
+      await api.post('/groups', formData);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create group. Please try again.');
     } finally {
@@ -120,3 +119,4 @@ function CreateGroup() {
 }
 
 export default CreateGroup;
+

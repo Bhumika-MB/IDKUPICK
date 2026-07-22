@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
@@ -13,13 +13,16 @@ function GroupDetail() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchGroupData();
-    const interval = setInterval(fetchSubmissionStatus, 3000);
-    return () => clearInterval(interval);
+  const fetchSubmissionStatus = useCallback(async () => {
+    try {
+      const response = await api.get(`/preferences/group/${groupId}/status`);
+      setSubmissionStatus(response.data.data);
+    } catch (error) {
+      console.error('Error fetching submission status:', error);
+    }
   }, [groupId]);
 
-  const fetchGroupData = async () => {
+  const fetchGroupData = useCallback(async () => {
     try {
       const [groupResponse, statusResponse] = await Promise.all([
         api.get(`/groups/${groupId}`),
@@ -33,16 +36,13 @@ function GroupDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId]);
 
-  const fetchSubmissionStatus = async () => {
-    try {
-      const response = await api.get(`/preferences/group/${groupId}/status`);
-      setSubmissionStatus(response.data.data);
-    } catch (error) {
-      console.error('Error fetching submission status:', error);
-    }
-  };
+  useEffect(() => {
+    fetchGroupData();
+    const interval = setInterval(fetchSubmissionStatus, 3000);
+    return () => clearInterval(interval);
+  }, [groupId, fetchGroupData, fetchSubmissionStatus]);
 
   const handleGenerateRecommendations = async () => {
     try {
@@ -194,3 +194,4 @@ function GroupDetail() {
 }
 
 export default GroupDetail;
+

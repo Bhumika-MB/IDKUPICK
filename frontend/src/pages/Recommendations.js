@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
@@ -9,11 +9,7 @@ function Recommendations() {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, [groupId]);
-
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     try {
       const [groupResponse, recResponse] = await Promise.all([
         api.get(`/groups/${groupId}`),
@@ -27,7 +23,11 @@ function Recommendations() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId]);
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, [groupId, fetchRecommendations]);
 
   const getPriceSymbol = (priceLevel) => {
     return '$'.repeat(priceLevel || 2);
@@ -184,3 +184,4 @@ function Recommendations() {
 }
 
 export default Recommendations;
+

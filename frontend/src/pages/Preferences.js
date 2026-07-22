@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
@@ -22,11 +22,7 @@ function Preferences() {
     'Vietnamese', 'Greek', 'Spanish', 'BBQ', 'Seafood'
   ];
 
-  useEffect(() => {
-    fetchGroupAndPreferences();
-  }, [groupId]);
-
-  const fetchGroupAndPreferences = async () => {
+  const fetchGroupAndPreferences = useCallback(async () => {
     try {
       const [groupResponse, prefResponse] = await Promise.all([
         api.get(`/groups/${groupId}`),
@@ -50,7 +46,11 @@ function Preferences() {
     } catch (error) {
       console.error('Error fetching data:', error);
     }
-  };
+  }, [groupId]);
+
+  useEffect(() => {
+    fetchGroupAndPreferences();
+  }, [groupId, fetchGroupAndPreferences]);
 
   const handleCuisineToggle = (cuisine) => {
     if (formData.cuisine.includes(cuisine)) {
@@ -303,3 +303,4 @@ function Preferences() {
 }
 
 export default Preferences;
+
