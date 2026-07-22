@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 function Recommendations() {
   const [recommendations, setRecommendations] = useState([]);
@@ -16,8 +16,8 @@ function Recommendations() {
   const fetchRecommendations = async () => {
     try {
       const [groupResponse, recResponse] = await Promise.all([
-        axios.get(`/api/groups/${groupId}`),
-        axios.get(`/api/recommendations/${groupId}`)
+        api.get(`/groups/${groupId}`),
+        api.get(`/recommendations/${groupId}`)
       ]);
 
       setGroup(groupResponse.data.data.group);

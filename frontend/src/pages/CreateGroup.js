@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 function CreateGroup() {
   const [formData, setFormData] = useState({
@@ -33,7 +33,7 @@ function CreateGroup() {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/groups', formData);
+      const response = await api.post('/groups', formData);
       const group = response.data.data.group;
       navigate(`/dashboard`);
     } catch (err) {

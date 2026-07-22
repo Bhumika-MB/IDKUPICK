@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 function JoinGroup() {
   const [code, setCode] = useState('');
@@ -20,7 +20,7 @@ function JoinGroup() {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/groups/join', { code: code.toUpperCase() });
+      const response = await api.post('/groups/join', { code: code.toUpperCase() });
       const groupId = response.data.data.group._id;
       navigate(`/group/${groupId}`);
     } catch (err) {

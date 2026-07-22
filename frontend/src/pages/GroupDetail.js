@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 
 function GroupDetail() {
@@ -22,8 +22,8 @@ function GroupDetail() {
   const fetchGroupData = async () => {
     try {
       const [groupResponse, statusResponse] = await Promise.all([
-        axios.get(`/api/groups/${groupId}`),
-        axios.get(`/api/preferences/group/${groupId}/status`)
+        api.get(`/groups/${groupId}`),
+        api.get(`/preferences/group/${groupId}/status`)
       ]);
       setGroup(groupResponse.data.data.group);
       setSubmissionStatus(statusResponse.data.data);
@@ -37,7 +37,7 @@ function GroupDetail() {
 
   const fetchSubmissionStatus = async () => {
     try {
-      const response = await axios.get(`/api/preferences/group/${groupId}/status`);
+      const response = await api.get(`/preferences/group/${groupId}/status`);
       setSubmissionStatus(response.data.data);
     } catch (error) {
       console.error('Error fetching submission status:', error);
@@ -46,7 +46,7 @@ function GroupDetail() {
 
   const handleGenerateRecommendations = async () => {
     try {
-      await axios.post(`/api/recommendations/${groupId}`);
+      await api.post(`/recommendations/${groupId}`);
       navigate(`/group/${groupId}/recommendations`);
     } catch (error) {
       console.error('Error generating recommendations:', error);
@@ -57,7 +57,7 @@ function GroupDetail() {
   const handleDeleteGroup = async () => {
     setDeleting(true);
     try {
-      await axios.delete(`/api/groups/${groupId}`);
+      await api.delete(`/groups/${groupId}`);
       navigate('/dashboard');
     } catch (error) {
       console.error('Error deleting group:', error);

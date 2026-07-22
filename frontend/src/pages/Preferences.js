@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 function Preferences() {
   const [formData, setFormData] = useState({
@@ -29,8 +29,8 @@ function Preferences() {
   const fetchGroupAndPreferences = async () => {
     try {
       const [groupResponse, prefResponse] = await Promise.all([
-        axios.get(`/api/groups/${groupId}`),
-        axios.get(`/api/preferences/group/${groupId}/me`)
+        api.get(`/groups/${groupId}`),
+        api.get(`/preferences/group/${groupId}/me`)
       ]);
 
       setGroup(groupResponse.data.data.group);
@@ -113,7 +113,7 @@ function Preferences() {
     setLoading(true);
 
     try {
-      await axios.post('/api/preferences', {
+      await api.post('/preferences', {
         groupId,
         ...formData
       });

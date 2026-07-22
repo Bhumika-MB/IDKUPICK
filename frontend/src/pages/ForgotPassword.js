@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/forgot-password', { email });
+      const response = await api.post('/auth/forgot-password', { email });
       setMessage(
         `Password reset instructions sent! Reset token: ${response.data.resetToken} (In production, this would be sent via email)`
       );

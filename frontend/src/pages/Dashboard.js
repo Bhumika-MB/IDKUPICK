@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 
 function Dashboard() {
@@ -15,7 +15,7 @@ function Dashboard() {
 
   const fetchGroups = async () => {
     try {
-      const response = await axios.get('/api/groups');
+      const response = await api.get('/groups');
       setGroups(response.data.data.groups);
     } catch (error) {
       console.error('Error fetching groups:', error);

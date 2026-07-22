@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 function ResetPassword() {
   const [formData, setFormData] = useState({
@@ -39,7 +39,7 @@ function ResetPassword() {
     setLoading(true);
 
     try {
-      await axios.put(`/api/auth/reset-password/${token}`, {
+      await api.put(`/auth/reset-password/${token}`, {
         password: formData.password
       });
       setMessage('Password reset successful! Redirecting to login...');
