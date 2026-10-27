@@ -239,6 +239,8 @@ exports.getRecommendations = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('[RecommendationController] Error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Error fetching recommendations',

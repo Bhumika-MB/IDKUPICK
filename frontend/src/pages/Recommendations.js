@@ -34,9 +34,42 @@ function Recommendations() {
   };
 
   const getDirections = (restaurant) => {
-    const { lat, lng } = restaurant.location;
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-    window.open(url, '_blank');
+    const lat = Number(restaurant.location?.lat);
+    const lng = Number(restaurant.location?.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      alert('Restaurant location is unavailable.');
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert('Your browser does not support location access.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const origin = `${position.coords.latitude},${position.coords.longitude}`;
+        const destination = `${lat},${lng}`;
+
+        const url =
+          `https://www.google.com/maps/dir/?api=1` +
+          `&origin=${encodeURIComponent(origin)}` +
+          `&destination=${encodeURIComponent(destination)}` +
+          `&travelmode=driving`;
+
+        window.open(url, '_blank', 'noopener,noreferrer');
+      },
+      (error) => {
+        console.error('Location error:', error);
+        alert('Please allow location access in your browser and try again.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
   };
 
   if (loading) {

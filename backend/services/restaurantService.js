@@ -2,10 +2,8 @@ const axios = require('axios');
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass.private.coffee/api/interpreter',
-  'https://z.overpass-api.de/api/interpreter',
-  'https://lz4.overpass-api.de/api/interpreter',
-  'https://overpass.osm.ch/api/interpreter',
-  'https://overpass-api.de/api/interpreter'
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
 const DEFAULT_RADIUS_KM = 5;
 const DEFAULT_RATING = 4.0;
@@ -156,8 +154,7 @@ function buildAddress(tags) {
 }
 
 function buildGoogleMapsUrl(lat, lng) {
-  // Use the most accurate coordinates for Google Maps directions
-  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 }
 
 function getCoordinates(element) {
@@ -272,6 +269,7 @@ function toRestaurant(element, centerLocation, selectedCuisines) {
   const distance = calculateDistance(centerLocation.lat, centerLocation.lng, coords.lat, coords.lng);
   const addr = buildAddress(element.tags);
 
+  console.log('[DEBUG] Restaurant:', name, 'Coordinates:', coords);
   const r = {
     placeId: `osm_${element.type || 'e'}_${element.id}`,
     name: name || 'Unnamed Restaurant',
@@ -349,7 +347,7 @@ async function fetchRestaurantsFromOverpass(location, radiusKm) {
 
   for (let attempt = 0; attempt < OVERPASS_ENDPOINTS.length; attempt++) {
     const endpoint = OVERPASS_ENDPOINTS[attempt];
-    const timeout = 20000;
+    const timeout = 5000;
     try {
       const response = await axios.post(endpoint, query, {
         timeout,
@@ -370,6 +368,68 @@ async function fetchRestaurantsFromOverpass(location, radiusKm) {
   return [];
 }
 
+// Backup API: IndiaRestros
+async function fetchRestaurantsFromIndiaRestros(location, radiusKm) {
+  try {
+    console.log('[RestaurantService] Trying IndiaRestros backup API...');
+
+    const response = await axios.get(
+      'https://indiarestros.com/api/v1/restaurants',
+      {
+        params: {
+          lat: location.lat,
+          lon: location.lng,
+          radius_m: Math.round(radiusKm * 1000),
+          limit: 100
+        },
+        timeout: 8000
+      }
+    );
+
+    const data = response.data;
+    const results = Array.isArray(data)
+      ? data
+      : Array.isArray(data.results)
+        ? data.results
+        : [];
+
+    if (results.length === 0) {
+      console.warn('[RestaurantService] IndiaRestros returned no restaurants.');
+      return [];
+    }
+
+    // Convert IndiaRestros records into the format used by the existing code
+    return results
+      .filter(item => item && typeof item.lat === 'number' && typeof item.lon === 'number')
+      .map(item => ({
+        type: 'node',
+        id: item.id || item.path || item.name,
+        lat: item.lat,
+        lon: item.lon,
+        tags: {
+          name: item.name || 'Unnamed Restaurant',
+          cuisine: Array.isArray(item.cuisines)
+            ? item.cuisines.join(';')
+            : item.cuisines || '',
+          amenity: 'restaurant',
+          'addr:suburb': item.locality || '',
+          'addr:city': item.city || '',
+          'addr:state': item.state || '',
+          phone: item.phone || '',
+          website: item.url || '',
+          brand: item.brand || '',
+          price_band: item.price_band || ''
+        }
+      }));
+  } catch (error) {
+    console.error(
+      '[RestaurantService] IndiaRestros backup failed:',
+      error.message
+    );
+    return [];
+  }
+}
+
 async function getRestaurants(centerLocation, maxDistance, cuisines, maxPrice) {
   if (!centerLocation || typeof centerLocation.lat !== 'number' || typeof centerLocation.lng !== 'number') {
     return [];
@@ -381,11 +441,25 @@ async function getRestaurants(centerLocation, maxDistance, cuisines, maxPrice) {
   // Progressive radius expansion: try user's radius, then 2x, then 4x
   let elements;
   let attempts = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 1; 
 
   while (attempts < maxAttempts) {
-    elements = await fetchRestaurantsFromOverpass(centerLocation, radiusKm);
-    if (elements && elements.length > 0) {
+  // Primary API: OpenStreetMap Overpass
+  elements = await fetchRestaurantsFromOverpass(centerLocation, radiusKm);
+
+  // Backup API: IndiaRestros
+  if (!elements || elements.length === 0) {
+    console.warn(
+      '[RestaurantService] Overpass unavailable. Trying IndiaRestros backup...'
+    );
+
+    elements = await fetchRestaurantsFromIndiaRestros(
+      centerLocation,
+      radiusKm
+    );
+  }
+
+  if (elements && elements.length > 0) {
       // Check if we have enough potential results after parsing
       const preliminary = elements
         .map(el => toRestaurant(el, centerLocation, cuisines || []))
@@ -399,94 +473,10 @@ async function getRestaurants(centerLocation, maxDistance, cuisines, maxPrice) {
   }
 
   if (!elements || elements.length === 0) {
-    console.log("Using fallback restaurant data...");
-
-    return [
-      {
-        placeId: "1",
-        name: "Meghana Foods",
-        address: "Jayanagar 4th Block, Bengaluru",
-        rating: 4.6,
-        priceLevel: 2,
-        cuisine: ["Biryani", "North Indian"],
-        location: {
-          lat: 12.9298,
-          lng: 77.5838
-        },
-        distance: 1.2,
-        photoUrl: "",
-        googleMapsUrl:
-          "https://www.google.com/maps/search/?api=1&query=12.9298,77.5838"
-      },
-
-      {
-        placeId: "2",
-        name: "Empire Restaurant",
-        address: "Jayanagar, Bengaluru",
-        rating: 4.3,
-        priceLevel: 2,
-        cuisine: ["North Indian", "Chinese"],
-        location: {
-          lat: 12.9275,
-          lng: 77.5855
-        },
-        distance: 1.5,
-        photoUrl: "",
-        googleMapsUrl:
-          "https://www.google.com/maps/search/?api=1&query=12.9275,77.5855"
-      },
-
-      {
-        placeId: "3",
-        name: "Truffles",
-        address: "Jayanagar, Bengaluru",
-        rating: 4.5,
-        priceLevel: 2,
-        cuisine: ["Continental", "Fast Food"],
-        location: {
-          lat: 12.9269,
-          lng: 77.5843
-        },
-        distance: 1.7,
-        photoUrl: "",
-        googleMapsUrl:
-          "https://www.google.com/maps/search/?api=1&query=12.9269,77.5843"
-      },
-
-      {
-        placeId: "4",
-        name: "Vidyarthi Bhavan",
-        address: "Basavanagudi, Bengaluru",
-        rating: 4.7,
-        priceLevel: 1,
-        cuisine: ["South Indian"],
-        location: {
-          lat: 12.9419,
-          lng: 77.5736
-        },
-        distance: 2.5,
-        photoUrl: "",
-        googleMapsUrl:
-          "https://www.google.com/maps/search/?api=1&query=12.9419,77.5736"
-      },
-
-      {
-        placeId: "5",
-        name: "Byg Brewski",
-        address: "JP Nagar, Bengaluru",
-        rating: 4.4,
-        priceLevel: 3,
-        cuisine: ["Continental"],
-        location: {
-          lat: 12.9068,
-          lng: 77.5858
-        },
-        distance: 3.8,
-        photoUrl: "",
-        googleMapsUrl:
-          "https://www.google.com/maps/search/?api=1&query=12.9068,77.5858"
-      }
-    ];
+  console.warn(
+    "[RestaurantService] Live restaurant data unavailable. No fallback restaurants returned."
+  );
+  return [];
 }
 
   let restaurants = elements
